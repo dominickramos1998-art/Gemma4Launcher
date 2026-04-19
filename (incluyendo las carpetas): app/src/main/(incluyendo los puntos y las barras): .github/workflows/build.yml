@@ -1,0 +1,36 @@
+name: Fabrica_Gemma_Pro
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Configurar Java
+        uses: actions/setup-java@v3
+        with: { java-version: '17', distribution: 'temurin' }
+      - name: Preparar y Compilar APK
+        run: |
+          echo "include ':app'" > settings.gradle
+          cat <<EOF > build.gradle
+          buildscript {
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:8.1.1' }
+          }
+          allprojects { repositories { google(); mavenCentral() } }
+          EOF
+          cat <<EOF > app/build.gradle
+          plugins { id 'com.android.application' }
+          android {
+              namespace 'com.dominick.gemma.pro'
+              compileSdk 34
+              defaultConfig { applicationId "com.dominick.gemma.pro"; minSdk 26; targetSdk 34; versionCode 1; versionName "1.0" }
+          }
+          EOF
+          chmod +x gradlew || true
+          gradle assembleDebug
+      - name: Entregar Archivo
+        uses: actions/upload-artifact@v3
+        with:
+          name: Gemma-4-Pro-Final
+          path: "app/build/outputs/apk/debug/*.apk"
+          
