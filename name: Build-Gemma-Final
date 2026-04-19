@@ -1,0 +1,52 @@
+name: Build-Gemma-Final
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Master-Build
+        run: |
+          mkdir -p app/src/main/res/values
+          cat <<EOF > app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.dominick.gemma.pro">
+            <application android:label="Gemma 4 Pro" android:theme="@style/Theme.AppCompat.NoActionBar">
+              <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleInstance">
+                <intent-filter>
+                  <action android:name="android.intent.action.MAIN" />
+                  <category android:name="android.intent.category.HOME" />
+                  <category android:name="android.intent.category.DEFAULT" />
+                </intent-filter>
+              </activity>
+            </application>
+          </manifest>
+          EOF
+          echo '<resources><style name="Theme.AppCompat.NoActionBar" parent="android:Theme.Material.Light.NoActionBar"/></resources>' > app/src/main/res/values/styles.xml
+          echo "include ':app'" > settings.gradle
+          cat <<EOF > build.gradle
+          buildscript {
+            repositories { google(); mavenCentral() }
+            dependencies { classpath 'com.android.tools.build:gradle:8.1.1' }
+          }
+          allprojects { repositories { google(); mavenCentral() } }
+          EOF
+          cat <<EOF > app/build.gradle
+          plugins { id 'com.android.application' }
+          android {
+            namespace 'com.dominick.gemma.pro'
+            compileSdk 34
+            defaultConfig { applicationId "com.dominick.gemma.pro"; minSdk 26; targetSdk 34; versionCode 1; versionName "1.0" }
+          }
+          EOF
+          gradle assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: Launcher-Gemma-Final
+          path: "app/build/outputs/apk/debug/*.apk"
